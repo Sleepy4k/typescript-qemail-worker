@@ -22,15 +22,15 @@ Worker ini membutuhkan dua secret yang harus dikonfigurasi sebelum deploy:
 
 | Secret | Keterangan |
 |---|---|
-| `API_ENDPOINT` | URL endpoint backend API untuk menerima webhook |
+| `API_BASE` | URL endpoint backend API untuk menerima webhook |
 | `WEBHOOK_SECRET` | Secret key untuk autentikasi request webhook |
 
 ## Langkah-langkah Deploy
 
-**1. Set secret `API_ENDPOINT`**
+**1. Set secret `API_BASE`**
 
 ```bash
-npx wrangler secret put API_ENDPOINT
+npx wrangler secret put API_BASE
 ```
 
 **2. Set secret `WEBHOOK_SECRET`**
