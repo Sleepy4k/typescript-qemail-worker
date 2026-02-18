@@ -30,32 +30,48 @@ interface WebhookPayload {
 
 export default {
   async email(message: EmailMessage, env: Env, _ctx: ExecutionContext): Promise<void> {
-    if (!env.API_BASE || !env.WEBHOOK_SECRET) {
-      console.error("[qemail] API_BASE or WEBHOOK_SECRET not configured");
-      return;
-    }
+    try {
+      console.log("[qemail] Processing email from:", message.from, "to:", message.to);
+      
+      if (!env.API_BASE || !env.WEBHOOK_SECRET) {
+        console.error("[qemail] API_BASE or WEBHOOK_SECRET not configured");
+        return;
+      }
 
-    const authHeaders = { "X-Webhook-Secret": env.WEBHOOK_SECRET };
+      const authHeaders = { "X-Webhook-Secret": env.WEBHOOK_SECRET };
 
-    const [forwardTarget, payload] = await Promise.all([
-      fetchForwardTarget(message.to, env.API_BASE, authHeaders),
-      buildPayload(message),
-    ]);
+      console.log("[qemail] Building payload...");
+      const payload = await buildPayload(message);
+      console.log("[qemail] Payload built successfully");
 
-    if (forwardTarget) {
-      await message.forward(forwardTarget);
-    }
+      console.log("[qemail] Sending to webhook:", `${env.API_BASE}/webhook/incoming-email`);
+      const res = await fetch(`${env.API_BASE}/webhook/incoming-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify(payload),
+      });
 
-    const res = await fetch(`${env.API_BASE}/webhook/incoming-email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify(payload),
-    });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "(unreadable)");
+        console.error(`[qemail] Backend ${res.status}: ${body}`);
+        return;
+      }
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "(unreadable)");
-      console.error(`[qemail] Backend ${res.status}: ${body}`);
-      throw new Error(`Backend error ${res.status}`);
+      console.log("[qemail] Webhook successful");
+
+      const forwardTarget = await fetchForwardTarget(message.to, env.API_BASE, authHeaders);
+      if (forwardTarget) {
+        try {
+          console.log("[qemail] Forwarding to:", forwardTarget);
+          await message.forward(forwardTarget);
+        } catch (err) {
+          console.error("[qemail] Forward failed:", err);
+        }
+      }
+
+      console.log("[qemail] Email processed successfully");
+    } catch (err) {
+      console.error("[qemail] Worker error:", err);
     }
   },
 };
