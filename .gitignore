@@ -1,2 +1,7 @@
+# Cloudflare Workers configuration and build files
 .wrangler/
 wrangler.toml.backup
+
+# Claude AI
+claude/
+tmpclaude-*
