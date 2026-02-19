@@ -3,4 +3,4 @@ main = "index.ts"
 compatibility_date = "2024-09-23"
 
 [vars]
-API_BASE = "https://api.qemail.web.id/api/v1"
+API_BASE = "https://api.qemail.web.id/v1"
